@@ -1,0 +1,10 @@
+streamlit
+pandas
+pm4py
+sentence-transformers
+faiss-cpu
+langchain
+transformers
+unstructured
+python-multipart
+reportlab
