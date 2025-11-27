@@ -7,10 +7,38 @@ from pathlib import Path
 import pickle
 
 # PM4Py
-import pm4py
-from pm4py.statistics.traces.generic.pandas import get_variants
-from pm4py.objects.conversion.log import converter as log_converter
-from pm4py.objects.log.util import dataframe_utils
+# --- replace direct pm4py import with lazy loader and fallback UI ---
+# remove or comment out: from pm4py.statistics.traces.generic.pandas import get_variants
+# and other top-level pm4py imports
+
+import importlib
+pm4py = None
+pm4py_error = None
+
+def try_load_pm4py():
+    global pm4py, pm4py_error
+    if pm4py is not None or pm4py_error is not None:
+        return
+    try:
+        pm4py = importlib.import_module("pm4py")
+        # import the specific utilities you need lazily
+        global get_variants, log_converter, dataframe_utils
+        get_variants = importlib.import_module("pm4py.statistics.traces.generic.pandas").get_variants
+        log_converter = importlib.import_module("pm4py.objects.conversion.log.converter")
+        dataframe_utils = importlib.import_module("pm4py.objects.log.util.dataframe_utils")
+    except Exception as e:
+        pm4py_error = e
+
+# Later in the UI, where you run PM steps, call try_load_pm4py()
+# Example inside the button handler:
+if st.button("Run Pi: extract variants"):
+    try_load_pm4py()
+    if pm4py_error is not None:
+        st.error("pm4py failed to load in this environment. See Manage app → Logs for details.")
+        st.info("Quick workaround: use the prebuilt index or deploy with Docker/Render (instructions in README).")
+    else:
+        # safe to call pm4py functions here
+        variants = extract_variants(df)  # your function can call get_variants etc.
 
 # Embeddings & FAISS
 from sentence_transformers import SentenceTransformer
